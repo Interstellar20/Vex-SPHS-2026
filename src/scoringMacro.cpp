@@ -15,13 +15,43 @@ double macroLiftTargetPosition = 580;
 
 // Final scoring mechanism position
 double macroScoringTargetPosition = 600;
+
 // How long the scoring wheels accept during the scoring macro
 int macroScoringWheelsTime = 750;
+
 // How close the motors need to be to count as finished
 double macroPositionTolerance = 25;
 
+// How close the cascade needs to be to 0 to count as fully down
+double macroLiftBottomTolerance = 5;
+
+// How long the scoring wheels release before returning
+int macroScoringReleaseTime = 500;
+
+// How much farther the cascade moves up before returning
+double macroReturnLiftBumpAmount = 100;
+
+// How fast the robot drives forward before returning
+int macroDriveForwardSpeed = 50;
+
+// How long the robot drives forward before returning
+int macroDriveForwardTime = 300;
+
 // Maximum amount of time the scoring macro can run
 int macroSafetyTimeout = 3000;
+
+
+// Drive Motors
+
+pros::MotorGroup macroLeftDriveMotors(
+    {-15, -12},
+    pros::MotorGears::blue
+);
+
+pros::MotorGroup macroRightDriveMotors(
+    {19, 11},
+    pros::MotorGears::blue
+);
 
 
 // Scoring Macro State
@@ -30,6 +60,9 @@ enum ScoringMacroState {
     MACRO_IDLE,
     MACRO_RAISING_LIFT,
     MACRO_RAISING_BOTH,
+    MACRO_RELEASING,
+    MACRO_RETURN_LIFT_BUMP,
+    MACRO_DRIVING_FORWARD,
     MACRO_RETURNING_LIFT,
     MACRO_RETURNING_SCORING
 };
@@ -39,14 +72,28 @@ ScoringMacroState scoringMacroState = MACRO_IDLE;
 // false = robot is in resting setup
 // true = robot is in scoring setup
 bool scoringPositionActive = false;
+
 // Remembers when the scoring wheels started running
 uint32_t scoringWheelsStartTime = 0;
+
 // Remembers when the scoring macro started running
 uint32_t scoringMacroStartTime = 0;
+
+// Remembers when the scoring wheels started releasing
+uint32_t scoringReleaseStartTime = 0;
+
+// Remembers when the robot started driving forward
+uint32_t macroDriveForwardStartTime = 0;
+
+// Remembers the cascade position to move to before returning
+double macroReturnLiftBumpTarget = 0;
+
 // Remembers if the last macro movement timed out
 bool scoringMacroTimedOut = false;
+
 // Remembers which direction the macro was moving before timeout
 bool scoringMacroTimedOutGoingUp = false;
+
 
 // Start Macro
 
@@ -83,7 +130,7 @@ void startScoringMacro() {
             scoringPositionActive = false;
 
             // If cascade is already at the bottom, continue lowering scoring mech
-            if (getLiftPosition() <= macroPositionTolerance) {
+            if (getLiftPosition() <= macroLiftBottomTolerance) {
                 scoringMacroState = MACRO_RETURNING_SCORING;
             }
             else {
@@ -105,7 +152,15 @@ void startScoringMacro() {
     else {
 
         scoringPositionActive = false;
-        scoringMacroState = MACRO_RETURNING_LIFT;
+
+        // Start scoring wheel release timer
+        scoringReleaseStartTime = pros::millis();
+
+        // Set cascade bump target from its current position
+        macroReturnLiftBumpTarget =
+            getLiftPosition() + macroReturnLiftBumpAmount;
+
+        scoringMacroState = MACRO_RELEASING;
     }
 }
 
@@ -138,6 +193,8 @@ void updateScoringMacro() {
         liftStop();
         scoringMechStop();
         scoringWheelsStop();
+        macroLeftDriveMotors.move(0);
+        macroRightDriveMotors.move(0);
 
         scoringMacroState = MACRO_IDLE;
         return;
@@ -159,7 +216,7 @@ void updateScoringMacro() {
     }
 
 
-    // Step 2 Raise Both
+    // Step 2: Raise Both
 
     else if (scoringMacroState == MACRO_RAISING_BOTH) {
 
@@ -204,14 +261,88 @@ void updateScoringMacro() {
     }
 
 
-    // Return Everything to Rest
+    // Release Scoring Wheels Before Returning
+
+    else if (scoringMacroState == MACRO_RELEASING) {
+
+        liftStop();
+        scoringMechStop();
+
+        if (
+            pros::millis() - scoringReleaseStartTime
+            <
+            macroScoringReleaseTime
+        ) {
+            scoringWheelsReject();
+        }
+        else {
+            scoringWheelsStop();
+
+            scoringMacroState = MACRO_RETURN_LIFT_BUMP;
+        }
+    }
+
+
+    // Raise Cascade a Little Before Returning
+
+    else if (scoringMacroState == MACRO_RETURN_LIFT_BUMP) {
+
+        scoringWheelsStop();
+        scoringMechStop();
+
+        if (
+            getLiftPosition() <
+            macroReturnLiftBumpTarget - macroPositionTolerance
+        ) {
+            liftUp();
+        }
+        else {
+            liftStop();
+
+            // Start forward drive timer
+            macroDriveForwardStartTime = pros::millis();
+
+            scoringMacroState = MACRO_DRIVING_FORWARD;
+        }
+    }
+
+
+    // Drive Robot Forward Before Returning Cascade
+
+    else if (scoringMacroState == MACRO_DRIVING_FORWARD) {
+
+        liftStop();
+        scoringMechStop();
+        scoringWheelsStop();
+
+        if (
+            pros::millis() - macroDriveForwardStartTime
+            <
+            macroDriveForwardTime
+        ) {
+            macroLeftDriveMotors.move(macroDriveForwardSpeed);
+            macroRightDriveMotors.move(macroDriveForwardSpeed);
+        }
+        else {
+            macroLeftDriveMotors.move(0);
+            macroRightDriveMotors.move(0);
+
+            // Restart safety timer for the normal return sequence
+            scoringMacroStartTime = pros::millis();
+
+            scoringMacroState = MACRO_RETURNING_LIFT;
+        }
+    }
+
+
+    // Return Cascade to Rest
 
     else if (scoringMacroState == MACRO_RETURNING_LIFT) {
 
         scoringWheelsStop();
 
-        // Return cascade to 0
-        if (getLiftPosition() > macroPositionTolerance) {
+        // Return cascade all the way to 0
+        if (getLiftPosition() > macroLiftBottomTolerance) {
             liftDown();
             scoringMechStop();
         }
@@ -222,6 +353,9 @@ void updateScoringMacro() {
             scoringMacroState = MACRO_RETURNING_SCORING;
         }
     }
+
+
+    // Return Scoring Mechanism to Rest
 
     else if (scoringMacroState == MACRO_RETURNING_SCORING) {
 
@@ -238,7 +372,7 @@ void updateScoringMacro() {
 
         // Both are back at resting position
         if (
-            getLiftPosition() <= macroPositionTolerance
+            getLiftPosition() <= macroLiftBottomTolerance
             &&
             getScoringMechPosition() <= macroPositionTolerance
         ) {
