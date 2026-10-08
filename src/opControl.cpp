@@ -8,6 +8,7 @@
 
 
 // Driver Curve Settings
+
 lemlib::ExpoDriveCurve throttle_curve(
     3,
     10,
@@ -19,6 +20,7 @@ lemlib::ExpoDriveCurve steer_curve(
     10,
     1.019
 );
+
 
 // Competition / Ansh
 double anshSteerExpo = 1.019;
@@ -168,61 +170,59 @@ void competitionDriver() {
     }
 
     // Intake Controls
-bool intakeAcceptHeld =
-    controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
+    bool intakeAcceptHeld =
+        controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
 
-if (intakeAcceptHeld) {
-    intakeAccept();
-}
-else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
-    intakeReject();
-}
-else {
-    intakeStop();
-}
+    if (intakeAcceptHeld) {
+        intakeAccept();
+    }
+    else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+        intakeReject();
+    }
+    else {
+        intakeStop();
+    }
 
     // Scoring Mechanism Up/Down Controls
     if (!isScoringMacroRunning()) {
 
-        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
-            scoringMechUp();
+        // Each button press moves the scoring mechanism one 10 degree snap
+        if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
+            scoringMechSnapUp();
         }
-        else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
-            scoringMechDown();
-        }
-        else {
-            scoringMechStop();
+        else if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) {
+            scoringMechSnapDown();
         }
     }
 
     // Scoring Flex Wheel Controls
-// Intake accept always makes the scoring wheels accept
-if (intakeAcceptHeld) {
-    scoringWheelsAccept();
-}
-else if (!yHeld) {
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
+    // Intake accept always makes the scoring wheels accept
+    if (intakeAcceptHeld) {
         scoringWheelsAccept();
     }
-    else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT)) {
-        scoringWheelsReject();
+    else if (!yHeld) {
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
+            scoringWheelsAccept();
+        }
+        else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT)) {
+            scoringWheelsReject();
+        }
+        else {
+            scoringWheelsStop();
+        }
     }
     else {
         scoringWheelsStop();
     }
-}
-else {
-    scoringWheelsStop();
-}
 
     // Run scoring macro
     updateScoringMacro();
 
-printf(
-    "Lift: %.2f | Scoring: %.2f\n",
-    getLiftPosition(),
-    getScoringMechPosition()
-);
+    printf(
+        "Lift: %.2f | Scoring: %.2f\n",
+        getLiftPosition(),
+        getScoringMechPosition()
+    );
 
     // Delay to prevent overloading the controller
     pros::delay(25);
@@ -303,61 +303,60 @@ void skillsDriver() {
     }
 
     // Intake Controls
-bool intakeAcceptHeld =
-    controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1);
+    bool intakeAcceptHeld =
+        controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1);
 
-if (intakeAcceptHeld) {
-    intakeAccept();
-}
-else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-    intakeReject();
-}
-else {
-    intakeStop();
-}
+    if (intakeAcceptHeld) {
+        intakeAccept();
+    }
+    else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
+        intakeReject();
+    }
+    else {
+        intakeStop();
+    }
+
     // Scoring Mechanism Up/Down Controls
     if (!isScoringMacroRunning()) {
 
-        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_X)) {
-            scoringMechUp();
+        // Each button press moves the scoring mechanism one 10 degree snap
+        if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_X)) {
+            scoringMechSnapUp();
         }
-        else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
-            scoringMechDown();
+        else if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
+            scoringMechSnapDown();
+        }
+    }
+
+    // Scoring Flex Wheel Controls
+    // Intake accept always makes the scoring wheels accept
+    if (intakeAcceptHeld) {
+        scoringWheelsAccept();
+    }
+    else if (!yHeld) {
+        if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP)) {
+            changeScoringDirection();
+        }
+
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
+            scoringWheels();
         }
         else {
-            scoringMechStop();
+            scoringWheelsStop();
         }
-    }
-
-// Scoring Flex Wheel Controls
-// Intake accept always makes the scoring wheels accept
-if (intakeAcceptHeld) {
-    scoringWheelsAccept();
-}
-else if (!yHeld) {
-    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP)) {
-        changeScoringDirection();
-    }
-
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
-        scoringWheels();
     }
     else {
         scoringWheelsStop();
     }
-}
-else {
-    scoringWheelsStop();
-}
 
     // Run scoring macro
     updateScoringMacro();
 
-printf(
-    "Lift: %.2f | Scoring: %.2f\n",
-    getLiftPosition(),
-    getScoringMechPosition()
-);
+    printf(
+        "Lift: %.2f | Scoring: %.2f\n",
+        getLiftPosition(),
+        getScoringMechPosition()
+    );
 
     // Delay to prevent overloading the controller
     pros::delay(25);

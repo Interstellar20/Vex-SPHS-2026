@@ -8,7 +8,10 @@ pros::Motor scoringMech(8);
 pros::Motor scoringWheelMotor(9);
 
 int scoringMechSpeed = 80;
-int scoringWheelsSpeed = 45;
+int scoringWheelsSpeed = 65;
+
+// How many scoring motor encoder degrees equal one 10 degree snap
+double scoringMechSnapAmount = 89;
 
 // false = flex wheels move one direction
 // true = flex wheels move the other direction
@@ -30,6 +33,48 @@ void scoringMechDown() {
 void scoringMechStop() {
     scoringMech.move(0);
 }
+
+
+// Manual Scoring Mechanism Angle Snapping
+
+void scoringMechSnapUp() {
+
+    double currentPosition = getScoringMechPosition();
+
+    double targetPosition =
+        currentPosition + scoringMechSnapAmount;
+
+    scoringMech.move_absolute(
+        targetPosition,
+        scoringMechSpeed
+    );
+
+    printf(
+        "Scoring Snap UP | Current: %.2f | Target: %.2f\n",
+        currentPosition,
+        targetPosition
+    );
+}
+
+void scoringMechSnapDown() {
+
+    double currentPosition = getScoringMechPosition();
+
+    double targetPosition =
+        currentPosition - scoringMechSnapAmount;
+
+    scoringMech.move_absolute(
+        targetPosition,
+        scoringMechSpeed
+    );
+
+    printf(
+        "Scoring Snap DOWN | Current: %.2f | Target: %.2f\n",
+        currentPosition,
+        targetPosition
+    );
+}
+
 
 // Used by Eva's profile
 void scoringWheels() {
