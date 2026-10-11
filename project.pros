@@ -631,6 +631,37 @@
                 "target": "v5",
                 "user_files": [],
                 "version": "9.2.0"
+            },
+            "libmvlib": {
+                "location": "C:\\Users\\ANDRE\\AppData\\Roaming\\PROS\\templates\\libmvlib@3.0.0",
+                "metadata": {
+                    "origin": "local"
+                },
+                "name": "libmvlib",
+                "py/object": "pros.conductor.templates.local_template.LocalTemplate",
+                "supported_kernels": "^4.2.2",
+                "system_files": [
+                    "include/mvlib/waypoint.hpp",
+                    "include/mvlib/api.hpp",
+                    "include/mvlib/private/raii.hpp",
+                    "include/mvlib/core.hpp",
+                    "include/mvlib/watches.hpp",
+                    "firmware/libmvlib.a",
+                    "include/mvlib/literals.hpp",
+                    "include/mvlib/Optional/okapi.hpp",
+                    "include/mvlib/renderHelper.hpp",
+                    "include/mvlib/Optional/ezTemplate.hpp",
+                    "include/mvlib/types.hpp",
+                    "include/mvlib/private/telemetry.hpp",
+                    "include/mvlib/Optional/lemlib.hpp",
+                    "include/mvlib/Optional/customOdom.hpp",
+                    "include/mvlib/private/sdSink.hpp",
+                    "include/mvlib/private/misc.hpp",
+                    "include/mvlib/private/forwardLogMacros.h"
+                ],
+                "target": "v5",
+                "user_files": [],
+                "version": "3.0.0"
             }
         },
         "upload_options": {},
