@@ -6,8 +6,8 @@
 #include "scoring.h"
 #include "scoringMacro.h"
 
-
 // Driver Curve Settings
+
 lemlib::ExpoDriveCurve throttle_curve(
     3,
     10,
@@ -33,7 +33,6 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 DriverMode driverMode = PRACTICE; // default driver mode is practice
 
 bool practiceSkills = false; // Allows practice driver to switch between competition and skills driver profiles WITHOUT changing the Current Mode
-
 
 // Driver Curve Adjustment
 
@@ -92,7 +91,6 @@ void updateDriverCurves(double &steerExpo, double &throttleExpo) {
         throttleExpo
     );
 }
-
 
 // Competition driver profile
 
@@ -156,30 +154,40 @@ void competitionDriver() {
     // Lift Controls
     if (!isScoringMacroRunning()) {
 
-        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_X)) {
+        // B toggles between match load position and 0
+        if (controller.get_digital_new_press(
+            pros::E_CONTROLLER_DIGITAL_B
+        )) {
+            toggleMatchLoad();
+        }
+        else if (controller.get_digital(
+            pros::E_CONTROLLER_DIGITAL_X
+        )) {
             liftUp();
         }
-        else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
+        else if (controller.get_digital(
+            pros::E_CONTROLLER_DIGITAL_A
+        )) {
             liftDown();
         }
-        else {
+        else if (!isMatchLoadMoving()) {
             liftStop();
         }
     }
 
     // Intake Controls
-bool intakeAcceptHeld =
-    controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
+    bool intakeAcceptHeld =
+        controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
 
-if (intakeAcceptHeld) {
-    intakeAccept();
-}
-else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
-    intakeReject();
-}
-else {
-    intakeStop();
-}
+    if (intakeAcceptHeld) {
+        intakeAccept();
+    }
+    else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+        intakeReject();
+    }
+    else {
+        intakeStop();
+    }
 
     // Scoring Mechanism Up/Down Controls
     if (!isScoringMacroRunning()) {
@@ -196,38 +204,42 @@ else {
     }
 
     // Scoring Flex Wheel Controls
-// Intake accept always makes the scoring wheels accept
-if (intakeAcceptHeld) {
-    scoringWheelsAccept();
-}
-else if (!yHeld) {
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
+    // Intake accept always makes the scoring wheels accept
+    if (intakeAcceptHeld) {
         scoringWheelsAccept();
     }
-    else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT)) {
-        scoringWheelsReject();
+    else if (!yHeld) {
+
+        if (controller.get_digital(
+            pros::E_CONTROLLER_DIGITAL_UP
+        )) {
+            scoringWheelsAccept();
+        }
+        else if (controller.get_digital(
+            pros::E_CONTROLLER_DIGITAL_LEFT
+        )) {
+            scoringWheelsReject();
+        }
+        else {
+            scoringWheelsStop();
+        }
     }
     else {
         scoringWheelsStop();
     }
-}
-else {
-    scoringWheelsStop();
-}
 
     // Run scoring macro
     updateScoringMacro();
 
-printf(
-    "Lift: %.2f | Scoring: %.2f\n",
-    getLiftPosition(),
-    getScoringMechPosition()
-);
+    printf(
+        "Lift: %.2f | Scoring: %.2f\n",
+        getLiftPosition(),
+        getScoringMechPosition()
+    );
 
     // Delay to prevent overloading the controller
     pros::delay(25);
 }
-
 
 // Skills driver profile
 
@@ -291,30 +303,41 @@ void skillsDriver() {
     // Lift Controls
     if (!isScoringMacroRunning()) {
 
-        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+        // A toggles between match load position and 0
+        if (controller.get_digital_new_press(
+            pros::E_CONTROLLER_DIGITAL_A
+        )) {
+            toggleMatchLoad();
+        }
+        else if (controller.get_digital(
+            pros::E_CONTROLLER_DIGITAL_L1
+        )) {
             liftUp();
         }
-        else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+        else if (controller.get_digital(
+            pros::E_CONTROLLER_DIGITAL_L2
+        )) {
             liftDown();
         }
-        else {
+        else if (!isMatchLoadMoving()) {
             liftStop();
         }
     }
 
     // Intake Controls
-bool intakeAcceptHeld =
-    controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1);
+    bool intakeAcceptHeld =
+        controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1);
 
-if (intakeAcceptHeld) {
-    intakeAccept();
-}
-else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-    intakeReject();
-}
-else {
-    intakeStop();
-}
+    if (intakeAcceptHeld) {
+        intakeAccept();
+    }
+    else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
+        intakeReject();
+    }
+    else {
+        intakeStop();
+    }
+
     // Scoring Mechanism Up/Down Controls
     if (!isScoringMacroRunning()) {
 
@@ -329,48 +352,59 @@ else {
         }
     }
 
-// Scoring Flex Wheel Controls
-// Intake accept always makes the scoring wheels accept
-if (intakeAcceptHeld) {
-    scoringWheelsAccept();
-}
-else if (!yHeld) {
-    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP)) {
-        changeScoringDirection();
+    // Scoring Flex Wheel Controls
+    // Intake accept always makes the scoring wheels accept
+    if (intakeAcceptHeld) {
+        scoringWheelsAccept();
     }
+    else if (!yHeld) {
 
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
-        scoringWheels();
+        if (controller.get_digital_new_press(
+            pros::E_CONTROLLER_DIGITAL_UP
+        )) {
+            changeScoringDirection();
+        }
+
+        if (controller.get_digital(
+            pros::E_CONTROLLER_DIGITAL_UP
+        )) {
+            scoringWheels();
+        }
+        else {
+            scoringWheelsStop();
+        }
     }
     else {
         scoringWheelsStop();
     }
-}
-else {
-    scoringWheelsStop();
-}
 
     // Run scoring macro
     updateScoringMacro();
 
-printf(
-    "Lift: %.2f | Scoring: %.2f\n",
-    getLiftPosition(),
-    getScoringMechPosition()
-);
+    printf(
+        "Lift: %.2f | Scoring: %.2f\n",
+        getLiftPosition(),
+        getScoringMechPosition()
+    );
 
     // Delay to prevent overloading the controller
     pros::delay(25);
 }
-
 
 // Practice driver profile
 
 void practiceDriver() {
 
     // X+A = Competition Driver
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_X)
-     && controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
+    if (
+        controller.get_digital(
+            pros::E_CONTROLLER_DIGITAL_X
+        )
+        &&
+        controller.get_digital_new_press(
+            pros::E_CONTROLLER_DIGITAL_A
+        )
+    ) {
 
         practiceSkills = false;
 
@@ -379,8 +413,15 @@ void practiceDriver() {
     }
 
     // X+B = Skills Driver
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_X)
-     && controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
+    if (
+        controller.get_digital(
+            pros::E_CONTROLLER_DIGITAL_X
+        )
+        &&
+        controller.get_digital_new_press(
+            pros::E_CONTROLLER_DIGITAL_B
+        )
+    ) {
 
         practiceSkills = true;
 

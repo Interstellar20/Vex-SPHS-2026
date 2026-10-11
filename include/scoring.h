@@ -13,6 +13,5 @@ void scoringWheelsStop();
 
 void changeScoringDirection();
 
-// scoring mechanism position commands for scoring macro
 double getScoringMechPosition();
 void resetScoringMechPosition();

@@ -1,13 +1,17 @@
-#include "main.h"
-#include "lemlib/api.hpp"
 #pragma once
 
-// four lift commands
-void liftSetup(); // holds position when stopped
-void liftUp(); // move up
-void liftDown(); // move down
-void liftStop(); // lift brakes and holds position
+void liftSetup();
 
-// lift position commands for scoring macro
+void liftUp();
+void liftDown();
+void liftStop();
+
+void toggleMatchLoad();
+bool isMatchLoadMoving();
+bool moveLiftToPosition(double targetPosition);
+
 double getLiftPosition();
+double getNormalLiftPosition();
+double getMatchLoadPosition();
+
 void resetLiftPosition();
