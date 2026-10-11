@@ -4,7 +4,8 @@
 # include "opcontrol.h"
 # include "robotConfigs.h"
 # include "intake.h"
-
+# include "scoring.h"
+# include "motionView.h"
 // two motors for the lift
 pros::MotorGroup liftMotors({10, -16}, pros::MotorGears::green);
 

@@ -5,6 +5,7 @@
 #include "intake.h"
 #include "scoring.h"
 #include "scoringMacro.h"
+# include "motionView.h"
 
 // Driver Curve Settings
 lemlib::ExpoDriveCurve throttle_curve(3, 10, 1.019);

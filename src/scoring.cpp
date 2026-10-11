@@ -1,6 +1,7 @@
 #include "scoring.h"
 #include "main.h"
 #include "lift.h"
+#include "motionView.h"
 
 // Scoring mechanism up/down motor
 pros::Motor scoringMech(8);

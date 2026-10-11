@@ -3,6 +3,8 @@
 #include "opcontrol.h"
 #include "lift.h" 
 #include "intake.h"
+#include "scoring.h"
+#include "motionView.h"
 
 // left motor group
 pros::MotorGroup left_motor_group({-15, -12}, pros::MotorGears::blue);

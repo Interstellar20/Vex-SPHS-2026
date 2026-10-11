@@ -3,6 +3,8 @@
 # include "opcontrol.h"
 # include "robotConfigs.h"
 # include "intake.h"
+# include "scoring.h"
+# include "motionView.h"
 
 pros::MotorGroup intake_motors({20, -17}, pros::MotorGears::green);
 

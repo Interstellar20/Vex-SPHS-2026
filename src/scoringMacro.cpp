@@ -2,6 +2,7 @@
 #include "main.h"
 #include "lift.h"
 #include "scoring.h"
+#include "motionView.h"
 
 // Scoring Macro Settings
 

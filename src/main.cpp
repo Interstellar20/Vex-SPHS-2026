@@ -4,7 +4,9 @@
 #include "lift.h"
 #include "intake.h"
 #include "scoring.h"
-
+#include "motionView.h"
+#include "scoringMacro.h"
+#include "auton.h"
 
 // Driver Profile Selector
 
@@ -85,6 +87,7 @@ void initialize() {
 
     chassis.calibrate(); //calibrates the IMU and sets the initial position to 0,0,0
 
+    initializeMotionView(); // initializes the motion view
     selectDriverMode(); // allows the user to select the driver mode (competition, skills, or practice)
     liftSetup(); // sets the lift motors to hold position when stopped
     intakeSetup(); // sets the intake motors to hold position when stopped
@@ -122,14 +125,7 @@ void competition_initialize() {}
  * from where it left off.
  */
 void autonomous() {
-    // set position to x:0, y:0, heading:0
-    chassis.setPose(0, 0, 0);
-    // turn to face heading 10 with a very long timeout
-    chassis.turnToHeading(90, 100000);
-
-    pros::delay(500); //Settle down time for bot
-
-    printf("Final Heading: %.2f\n", chassis.getPose().theta); //Prints final heading to console
+    testAuton();
 }
 
 void opcontrol() {
