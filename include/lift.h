@@ -6,12 +6,16 @@ void liftUp();
 void liftDown();
 void liftStop();
 
-void toggleMatchLoad();
-bool isMatchLoadMoving();
-bool moveLiftToPosition(double targetPosition);
-
 double getLiftPosition();
+
 double getNormalLiftPosition();
 double getMatchLoadPosition();
+double getMaxLiftPosition();
 
-void resetLiftPosition();
+bool moveLiftToPosition(double targetPosition);
+
+void toggleMatchLoad();
+void updateMatchLoad();
+void cancelMatchLoad();
+
+bool isMatchLoadMoving();

@@ -15,10 +15,13 @@ void changeScoringDirection();
 
 void checkScoringAutoTrigger();
 bool updateScoringAuto();
+
 void cancelScoringAuto();
 void syncScoringAuto();
+
 bool isScoringAutoMovingUp();
 bool isScoringAutoRunning();
 
 double getScoringMechPosition();
+
 void resetScoringMechPosition();

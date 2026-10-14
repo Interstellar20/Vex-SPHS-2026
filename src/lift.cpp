@@ -1,180 +1,125 @@
-// gives file access to the lift and main files
-# include "lift.h"
-# include "main.h"
-# include "opcontrol.h"
-# include "robotConfigs.h"
-# include "intake.h"
+#include "lift.h"
+#include "main.h"
 
-// two motors for the lift
-pros::MotorGroup liftMotors({10, -16}, pros::MotorGears::green);
+// Cascade motors
+pros::Motor liftMotor1(10);
+pros::Motor liftMotor2(-16);
 
-// speed of the lift
 int liftSpeed = 127;
 
-// LIFT POSITIONS
-
-// lowest possible cascade position / match load position
+// Measured lift positions
 double matchLoadPosition = 0;
+double normalLiftPosition = 310;
+double maxLiftPosition = 4130;
 
-// normal intake/resting position
-// CHANGE THIS NUMBER after testing
-double normalLiftPosition = 880;
+// How close the lift needs to be
+double liftPositionTolerance = 20;
 
-// slows down when this close to a target
-double liftSlowdownDistance = 150;
-
-// how close the lift can be to count as at the target
-double liftPositionTolerance = 15;
-
-// slower speed used near a target
-int liftSlowSpeed = 45;
-
-// false = normal position
-// true = match load position
-bool matchLoadActive = false;
-
-// true while automatically moving between normal and match load
+// Match load preset
 bool matchLoadMoving = false;
+double matchLoadTarget = 0;
 
-// motors for lift always hold until a button is pressed to change it (idk if needed)
 void liftSetup() {
-    liftMotors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-    resetLiftPosition();
+    liftMotor1.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    liftMotor2.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+
+    // Start robot with cascade fully down
+    liftMotor1.tare_position();
+    liftMotor2.tare_position();
+
+    matchLoadMoving = false;
+
+    liftStop();
 }
 
-// three lift commands
 void liftUp() {
-    matchLoadMoving = false;
-    matchLoadActive = false;
-    liftMotors.move(liftSpeed);
+    // Stop at the measured maximum height
+    if (getLiftPosition() >= maxLiftPosition) {
+        liftStop();
+        return;
+    }
+
+    liftMotor1.move(liftSpeed);
+    liftMotor2.move(liftSpeed);
 }
 
 void liftDown() {
-    matchLoadMoving = false;
-    matchLoadActive = false;
-
-    // stop the lift from trying to go below 0
-    if (getLiftPosition() <= matchLoadPosition) {
-        liftMotors.move(0);
-    }
-    // slow down when getting close to 0
-    else if (getLiftPosition() <= matchLoadPosition + liftSlowdownDistance) {
-        liftMotors.move(-liftSlowSpeed);
-    }
-    else {
-        liftMotors.move(-liftSpeed);
-    }
+    liftMotor1.move(-liftSpeed);
+    liftMotor2.move(-liftSpeed);
 }
 
-// stops the lift
 void liftStop() {
-    liftMotors.move(0);
+    liftMotor1.move(0);
+    liftMotor2.move(0);
 }
 
-// smoothly moves the lift to a position without bouncing around it
+double getLiftPosition() {
+    // Port 10 is used for the lift position
+    return liftMotor1.get_position();
+}
+
+double getNormalLiftPosition() {
+    return normalLiftPosition;
+}
+
+double getMatchLoadPosition() {
+    return matchLoadPosition;
+}
+
+double getMaxLiftPosition() {
+    return maxLiftPosition;
+}
+
 bool moveLiftToPosition(double targetPosition) {
-    double error = targetPosition - getLiftPosition();
-    double distance = error;
+    double currentPosition = getLiftPosition();
 
-    if (distance < 0) {
-        distance = -distance;
+    if (currentPosition > targetPosition + liftPositionTolerance) {
+        liftDown();
+        return false;
     }
 
-    // close enough to target
-    if (distance <= liftPositionTolerance) {
-        liftMotors.move(0);
-        return true;
+    if (currentPosition < targetPosition - liftPositionTolerance) {
+        liftUp();
+        return false;
     }
 
-    // moving up
-    if (error > 0) {
-        if (distance <= liftSlowdownDistance) {
-            liftMotors.move(liftSlowSpeed);
-        }
-        else {
-            liftMotors.move(liftSpeed);
-        }
-    }
+    liftStop();
 
-    // moving down
-    else {
-        // never intentionally drive below 0
-        if (getLiftPosition() <= matchLoadPosition) {
-            liftMotors.move(0);
-            return true;
-        }
-
-        if (distance <= liftSlowdownDistance) {
-            liftMotors.move(-liftSlowSpeed);
-        }
-        else {
-            liftMotors.move(-liftSpeed);
-        }
-    }
-
-    return false;
+    return true;
 }
 
-// switches between match load position and normal intake position
 void toggleMatchLoad() {
+    double currentPosition = getLiftPosition();
 
-    // go to match load position
-    if (matchLoadActive == false) {
-        matchLoadActive = true;
+    // If at intake height or above,
+    // move all the way down
+    if (currentPosition >= normalLiftPosition - liftPositionTolerance) {
+        matchLoadTarget = matchLoadPosition;
     }
 
-    // go back to normal intake position
+    // If below intake height,
+    // return to intake height
     else {
-        matchLoadActive = false;
+        matchLoadTarget = normalLiftPosition;
     }
 
     matchLoadMoving = true;
 }
 
-// checks if automatic match load movement is still happening
-bool isMatchLoadMoving() {
-
-    if (matchLoadMoving == false) {
-        return false;
+void updateMatchLoad() {
+    if (!matchLoadMoving) {
+        return;
     }
 
-    double targetPosition;
-
-    // figure out which position the cascade is currently moving to
-    if (matchLoadActive == true) {
-        targetPosition = matchLoadPosition;
-    }
-    else {
-        targetPosition = normalLiftPosition;
-    }
-
-    // smoothly move toward the target
-    if (moveLiftToPosition(targetPosition)) {
+    if (moveLiftToPosition(matchLoadTarget)) {
         matchLoadMoving = false;
     }
-
-    return matchLoadMoving;
 }
 
-// gets the current lift motor position
-double getLiftPosition() {
-    return liftMotors.get_position(0);
-}
-
-// gets the normal intake/resting position
-double getNormalLiftPosition() {
-    return normalLiftPosition;
-}
-
-// gets the match load position
-double getMatchLoadPosition() {
-    return matchLoadPosition;
-}
-
-// makes the current lift position 0
-void resetLiftPosition() {
-    liftMotors.tare_position();
-
-    matchLoadActive = true;
+void cancelMatchLoad() {
     matchLoadMoving = false;
+}
+
+bool isMatchLoadMoving() {
+    return matchLoadMoving;
 }
