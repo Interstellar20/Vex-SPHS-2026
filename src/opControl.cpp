@@ -21,48 +21,25 @@ double evaThrottleExpo = 1.019;
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 DriverMode driverMode = PRACTICE;
-
 bool practiceSkills = false;
 
-void updateDriverCurves(
-    double &steerExpo,
-    double &throttleExpo
-) {
-    bool yHeld =
-        controller.get_digital(
-            pros::E_CONTROLLER_DIGITAL_Y
-        );
+void updateDriverCurves(double &steerExpo, double &throttleExpo) {
+    bool yHeld = controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y);
 
     if (yHeld) {
-        if (
-            controller.get_digital_new_press(
-                pros::E_CONTROLLER_DIGITAL_LEFT
-            )
-        ) {
+        if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)) {
             steerExpo -= 0.001;
         }
 
-        if (
-            controller.get_digital_new_press(
-                pros::E_CONTROLLER_DIGITAL_RIGHT
-            )
-        ) {
+        if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
             steerExpo += 0.001;
         }
 
-        if (
-            controller.get_digital_new_press(
-                pros::E_CONTROLLER_DIGITAL_DOWN
-            )
-        ) {
+        if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)) {
             throttleExpo -= 0.001;
         }
 
-        if (
-            controller.get_digital_new_press(
-                pros::E_CONTROLLER_DIGITAL_UP
-            )
-        ) {
+        if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP)) {
             throttleExpo += 0.001;
         }
     }
@@ -86,97 +63,50 @@ void updateDriverCurves(
 
 // Ansh Driver
 void competitionDriver() {
-    updateDriverCurves(
-        anshSteerExpo,
-        anshThrottleExpo
-    );
+    updateDriverCurves(anshSteerExpo, anshThrottleExpo);
 
-    bool yHeld =
-        controller.get_digital(
-            pros::E_CONTROLLER_DIGITAL_Y
-        );
+    bool yHeld = controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y);
 
     // DOWN starts scoring macro
     if (
         !yHeld &&
-        controller.get_digital_new_press(
-            pros::E_CONTROLLER_DIGITAL_DOWN
-        )
+        controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)
     ) {
         startScoringMacro();
     }
 
     // Drive Controls
-    int leftY =
-        controller.get_analog(
-            pros::E_CONTROLLER_ANALOG_LEFT_Y
-        );
+    int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+    int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
-    int rightX =
-        controller.get_analog(
-            pros::E_CONTROLLER_ANALOG_RIGHT_X
-        );
+    lemlib::ExpoDriveCurve throttleCurve(3, 10, anshThrottleExpo);
+    lemlib::ExpoDriveCurve steerCurve(3, 10, anshSteerExpo);
 
-    lemlib::ExpoDriveCurve throttleCurve(
-        3,
-        10,
-        anshThrottleExpo
-    );
-
-    lemlib::ExpoDriveCurve steerCurve(
-        3,
-        10,
-        anshSteerExpo
-    );
-
-    int curvedThrottle =
-        throttleCurve.curve(leftY);
-
-    int curvedSteer =
-        steerCurve.curve(rightX);
+    int curvedThrottle = throttleCurve.curve(leftY);
+    int curvedSteer = steerCurve.curve(rightX);
 
     if (!isScoringMacroRunning()) {
-        chassis.arcade(
-            curvedThrottle,
-            curvedSteer,
-            true
-        );
+        chassis.arcade(curvedThrottle, curvedSteer, true);
     }
 
     // Lift Controls
     if (!isScoringMacroRunning()) {
         // B is the only way below intake height
-        if (
-            controller.get_digital_new_press(
-                pros::E_CONTROLLER_DIGITAL_B
-            )
-        ) {
+        if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
             toggleMatchLoad();
         }
 
         // X raises cascade
-        else if (
-            controller.get_digital(
-                pros::E_CONTROLLER_DIGITAL_X
-            )
-        ) {
+        else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_X)) {
             cancelMatchLoad();
-
             liftUp();
         }
 
         // A lowers cascade only to intake height
-        else if (
-            controller.get_digital(
-                pros::E_CONTROLLER_DIGITAL_A
-            )
-        ) {
+        else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
             cancelMatchLoad();
 
-            if (
-                getLiftPosition() >
-                getNormalLiftPosition() + 20
-            ) {
+            if (getLiftPosition() > getNormalLiftPosition() + 20) {
                 liftDown();
             }
             else {
@@ -193,18 +123,12 @@ void competitionDriver() {
 
     // Intake Controls
     bool intakeAcceptHeld =
-        controller.get_digital(
-            pros::E_CONTROLLER_DIGITAL_R2
-        );
+        controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
 
     if (intakeAcceptHeld) {
         intakeAccept();
     }
-    else if (
-        controller.get_digital(
-            pros::E_CONTROLLER_DIGITAL_L2
-        )
-    ) {
+    else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
         intakeReject();
     }
     else {
@@ -214,30 +138,22 @@ void competitionDriver() {
     // Scoring Mechanism Controls
     if (!isScoringMacroRunning()) {
         // Hold R1 to move up
-        if (
-            controller.get_digital(
-                pros::E_CONTROLLER_DIGITAL_R1
-            )
-        ) {
-            cancelScoringAuto();
-
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
+            syncScoringAuto();
             scoringMechUp();
         }
 
         // Hold L1 to move down
-        else if (
-            controller.get_digital(
-                pros::E_CONTROLLER_DIGITAL_L1
-            )
-        ) {
-            cancelScoringAuto();
-
+        else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+            syncScoringAuto();
             scoringMechDown();
         }
 
         // Release button and hold position
         else {
-            updateScoringAuto();
+            if (!updateScoringAuto()) {
+                scoringMechStop();
+            }
         }
     }
 
@@ -245,36 +161,23 @@ void competitionDriver() {
     if (intakeAcceptHeld) {
         scoringWheelsAccept();
     }
-
     else if (
         !isScoringMacroRunning() &&
         isScoringAutoMovingUp()
     ) {
         scoringWheelsAccept();
     }
-
     else if (!yHeld) {
-        if (
-            controller.get_digital(
-                pros::E_CONTROLLER_DIGITAL_UP
-            )
-        ) {
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
             scoringWheelsAccept();
         }
-
-        else if (
-            controller.get_digital(
-                pros::E_CONTROLLER_DIGITAL_LEFT
-            )
-        ) {
+        else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT)) {
             scoringWheelsReject();
         }
-
         else {
             scoringWheelsStop();
         }
     }
-
     else {
         scoringWheelsStop();
     }
@@ -294,97 +197,50 @@ void competitionDriver() {
 
 // Eva Driver
 void skillsDriver() {
-    updateDriverCurves(
-        evaSteerExpo,
-        evaThrottleExpo
-    );
+    updateDriverCurves(evaSteerExpo, evaThrottleExpo);
 
-    bool yHeld =
-        controller.get_digital(
-            pros::E_CONTROLLER_DIGITAL_Y
-        );
+    bool yHeld = controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y);
 
     // DOWN starts scoring macro
     if (
         !yHeld &&
-        controller.get_digital_new_press(
-            pros::E_CONTROLLER_DIGITAL_DOWN
-        )
+        controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)
     ) {
         startScoringMacro();
     }
 
     // Drive Controls
-    int leftY =
-        controller.get_analog(
-            pros::E_CONTROLLER_ANALOG_LEFT_Y
-        );
+    int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+    int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
-    int rightX =
-        controller.get_analog(
-            pros::E_CONTROLLER_ANALOG_RIGHT_X
-        );
+    lemlib::ExpoDriveCurve throttleCurve(3, 10, evaThrottleExpo);
+    lemlib::ExpoDriveCurve steerCurve(3, 10, evaSteerExpo);
 
-    lemlib::ExpoDriveCurve throttleCurve(
-        3,
-        10,
-        evaThrottleExpo
-    );
-
-    lemlib::ExpoDriveCurve steerCurve(
-        3,
-        10,
-        evaSteerExpo
-    );
-
-    int curvedThrottle =
-        throttleCurve.curve(leftY);
-
-    int curvedSteer =
-        steerCurve.curve(rightX);
+    int curvedThrottle = throttleCurve.curve(leftY);
+    int curvedSteer = steerCurve.curve(rightX);
 
     if (!isScoringMacroRunning()) {
-        chassis.arcade(
-            curvedThrottle,
-            curvedSteer,
-            true
-        );
+        chassis.arcade(curvedThrottle, curvedSteer, true);
     }
 
     // Lift Controls
     if (!isScoringMacroRunning()) {
         // A is the only way below intake height
-        if (
-            controller.get_digital_new_press(
-                pros::E_CONTROLLER_DIGITAL_A
-            )
-        ) {
+        if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
             toggleMatchLoad();
         }
 
         // L1 raises cascade
-        else if (
-            controller.get_digital(
-                pros::E_CONTROLLER_DIGITAL_L1
-            )
-        ) {
+        else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
             cancelMatchLoad();
-
             liftUp();
         }
 
         // L2 lowers cascade only to intake height
-        else if (
-            controller.get_digital(
-                pros::E_CONTROLLER_DIGITAL_L2
-            )
-        ) {
+        else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
             cancelMatchLoad();
 
-            if (
-                getLiftPosition() >
-                getNormalLiftPosition() + 20
-            ) {
+            if (getLiftPosition() > getNormalLiftPosition() + 20) {
                 liftDown();
             }
             else {
@@ -401,22 +257,14 @@ void skillsDriver() {
 
     // Intake Controls
     bool intakeAcceptHeld =
-        controller.get_digital(
-            pros::E_CONTROLLER_DIGITAL_R1
-        );
+        controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1);
 
     if (intakeAcceptHeld) {
         intakeAccept();
     }
-
-    else if (
-        controller.get_digital(
-            pros::E_CONTROLLER_DIGITAL_R2
-        )
-    ) {
+    else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
         intakeReject();
     }
-
     else {
         intakeStop();
     }
@@ -424,29 +272,22 @@ void skillsDriver() {
     // Scoring Mechanism Controls
     if (!isScoringMacroRunning()) {
         // Hold X to move up
-        if (
-            controller.get_digital(
-                pros::E_CONTROLLER_DIGITAL_X
-            )
-        ) {
-            cancelScoringAuto();
-
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_X)) {
+            syncScoringAuto();
             scoringMechUp();
         }
 
         // Hold B to move down
-        else if (
-            controller.get_digital(
-                pros::E_CONTROLLER_DIGITAL_B
-            )
-        ) {
-            cancelScoringAuto();
-
+        else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
+            syncScoringAuto();
             scoringMechDown();
         }
 
+        // Release button and hold position
         else {
-            updateScoringAuto();
+            if (!updateScoringAuto()) {
+                scoringMechStop();
+            }
         }
     }
 
@@ -454,14 +295,12 @@ void skillsDriver() {
     if (intakeAcceptHeld) {
         scoringWheelsAccept();
     }
-
     else if (
         !isScoringMacroRunning() &&
         isScoringAutoMovingUp()
     ) {
         scoringWheelsAccept();
     }
-
     else if (!yHeld) {
         if (
             controller.get_digital_new_press(
@@ -471,19 +310,13 @@ void skillsDriver() {
             changeScoringDirection();
         }
 
-        if (
-            controller.get_digital(
-                pros::E_CONTROLLER_DIGITAL_UP
-            )
-        ) {
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
             scoringWheels();
         }
-
         else {
             scoringWheelsStop();
         }
     }
-
     else {
         scoringWheelsStop();
     }
@@ -505,35 +338,21 @@ void skillsDriver() {
 void practiceDriver() {
     // X + A selects Ansh
     if (
-        controller.get_digital(
-            pros::E_CONTROLLER_DIGITAL_X
-        )
-        &&
-        controller.get_digital_new_press(
-            pros::E_CONTROLLER_DIGITAL_A
-        )
+        controller.get_digital(pros::E_CONTROLLER_DIGITAL_X) &&
+        controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)
     ) {
         practiceSkills = false;
-
         controller.rumble(".-");
-
         pros::delay(500);
     }
 
     // X + B selects Eva
     if (
-        controller.get_digital(
-            pros::E_CONTROLLER_DIGITAL_X
-        )
-        &&
-        controller.get_digital_new_press(
-            pros::E_CONTROLLER_DIGITAL_B
-        )
+        controller.get_digital(pros::E_CONTROLLER_DIGITAL_X) &&
+        controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)
     ) {
         practiceSkills = true;
-
         controller.rumble("-...");
-
         pros::delay(500);
     }
 

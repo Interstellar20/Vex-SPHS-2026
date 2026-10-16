@@ -7,54 +7,39 @@ pros::Motor liftMotor2(-16);
 
 int liftSpeed = 127;
 
-// Measured lift positions
+// Measured positions
 double matchLoadPosition = 0;
-double normalLiftPosition = 310;
-double maxLiftPosition = 4130;
-
-// How close the lift needs to be
+double normalLiftPosition = 1360;
+double maxLiftPosition = 5200;
 double liftPositionTolerance = 20;
+
+// Slowdown settings
+double liftSlowdownStart = 600;
+double liftMediumDistance = 300;
+double liftFinalDistance = 100;
+int liftMediumSpeed = 65;
+int liftSlowSpeed = 30;
+int liftFinalSpeed = 12;
 
 // Match load preset
 bool matchLoadMoving = false;
 double matchLoadTarget = 0;
-
-void liftSetup() {
-    liftMotor1.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-    liftMotor2.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-
-    // Start robot with cascade fully down
-    liftMotor1.tare_position();
-    liftMotor2.tare_position();
-
-    matchLoadMoving = false;
-
-    liftStop();
-}
-
-void liftUp() {
-    // Stop at the measured maximum height
-    if (getLiftPosition() >= maxLiftPosition) {
-        liftStop();
-        return;
-    }
-
-    liftMotor1.move(liftSpeed);
-    liftMotor2.move(liftSpeed);
-}
-
-void liftDown() {
-    liftMotor1.move(-liftSpeed);
-    liftMotor2.move(-liftSpeed);
-}
 
 void liftStop() {
     liftMotor1.move(0);
     liftMotor2.move(0);
 }
 
+void liftSetup() {
+    liftMotor1.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    liftMotor2.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    liftMotor1.tare_position();
+    liftMotor2.tare_position();
+    matchLoadMoving = false;
+    liftStop();
+}
+
 double getLiftPosition() {
-    // Port 10 is used for the lift position
     return liftMotor1.get_position();
 }
 
@@ -70,35 +55,68 @@ double getMaxLiftPosition() {
     return maxLiftPosition;
 }
 
-bool moveLiftToPosition(double targetPosition) {
-    double currentPosition = getLiftPosition();
+// Get the downward speed based on distance remaining
+int getLiftDownSpeed(double distance) {
+    if (distance <= liftFinalDistance) return liftFinalSpeed;
+    if (distance <= liftMediumDistance) return liftSlowSpeed;
+    if (distance <= liftSlowdownStart) return liftMediumSpeed;
+    return liftSpeed;
+}
 
-    if (currentPosition > targetPosition + liftPositionTolerance) {
-        liftDown();
+void liftUp() {
+    // No software maximum height
+    cancelMatchLoad();
+    liftMotor1.move(liftSpeed);
+    liftMotor2.move(liftSpeed);
+}
+
+void liftDown() {
+    // Manual DOWN cannot go below intake
+    cancelMatchLoad();
+    double distance = getLiftPosition() - normalLiftPosition;
+
+    if (distance <= 0) {
+        liftStop();
+        return;
+    }
+
+    int speed = getLiftDownSpeed(distance);
+    liftMotor1.move(-speed);
+    liftMotor2.move(-speed);
+}
+
+// Used by automatic movements, including the B preset
+bool moveLiftToPosition(double targetPosition) {
+    double error = targetPosition - getLiftPosition();
+
+    if (error > liftPositionTolerance) {
+        int speed = liftSpeed;
+        if (error <= liftFinalDistance) speed = liftFinalSpeed;
+        else if (error <= liftMediumDistance) speed = liftSlowSpeed;
+        else if (error <= liftSlowdownStart) speed = liftMediumSpeed;
+        liftMotor1.move(speed);
+        liftMotor2.move(speed);
         return false;
     }
 
-    if (currentPosition < targetPosition - liftPositionTolerance) {
-        liftUp();
+    if (error < -liftPositionTolerance) {
+        double distance = -error;
+        int speed = getLiftDownSpeed(distance);
+        liftMotor1.move(-speed);
+        liftMotor2.move(-speed);
         return false;
     }
 
     liftStop();
-
     return true;
 }
 
 void toggleMatchLoad() {
     double currentPosition = getLiftPosition();
 
-    // If at intake height or above,
-    // move all the way down
     if (currentPosition >= normalLiftPosition - liftPositionTolerance) {
         matchLoadTarget = matchLoadPosition;
     }
-
-    // If below intake height,
-    // return to intake height
     else {
         matchLoadTarget = normalLiftPosition;
     }
@@ -107,9 +125,7 @@ void toggleMatchLoad() {
 }
 
 void updateMatchLoad() {
-    if (!matchLoadMoving) {
-        return;
-    }
+    if (!matchLoadMoving) return;
 
     if (moveLiftToPosition(matchLoadTarget)) {
         matchLoadMoving = false;
